@@ -1,0 +1,48 @@
+# Essential system services for Hyprland
+autoconf-archive
+base
+base-devel
+intltool
+
+linux
+linux-firmware
+linux-headers
+
+libva-intel-driver
+libva-nvidia-driver
+
+limine
+
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+brightnessctl
+playerctl
+wl-clipboard
+grim
+slurp
+
+# Network management
+networkmanager
+nm-connection-editor
+network-manager-applet
+
+# Bluetooth
+bluez
+bluez-utils
+blueberry
+
+# NVIDIA
+nvidia-dkms
+nvidia-utils
+nvidia-settings
+lib32-nvidia-utils
+
+# DKMS and wireless
+dkms
+broadcom-wl-dkms
+
+qt5-remoteobjects
+qt6-wayland

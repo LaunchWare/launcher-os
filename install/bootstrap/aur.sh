@@ -43,3 +43,42 @@ bootstrap_aur() {
         return 1
     fi
 }
+
+# Install AUR packages - supports both package names and manifest files
+install_aur_packages() {
+    local input="$1"
+    local description="$2"
+
+    # Check if yay is available
+    if ! has_command yay; then
+        log_error "yay not found - cannot install AUR packages"
+        return 1
+    fi
+
+    local packages=""
+
+    # Determine if input is a file or package name(s)
+    if [[ -f "$input" ]]; then
+        # It's a manifest file
+        description="${description:-AUR packages from $(basename "$input")}"
+        packages=$(read_package_list "$input")
+
+        if [[ -z "$packages" ]]; then
+            log_warning "No AUR packages found in $input"
+            return 0
+        fi
+    else
+        # It's package name(s)
+        packages="$input"
+        description="${description:-AUR packages}"
+    fi
+
+    log_progress "Installing $description..."
+    log_info "AUR packages to install: $packages"
+
+    run_command "yay -S --noconfirm $packages" \
+        "Failed to install $description"
+
+    log_success "$description installed successfully"
+    return 0
+}

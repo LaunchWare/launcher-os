@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # Get the directory of this script
-LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # Source all utility modules
 source "$LIB_DIR/colors.sh"

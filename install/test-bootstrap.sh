@@ -3,11 +3,14 @@
 
 set -euo pipefail
 
+# Get the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Source the precheck barrel
-source precheck/index.sh
+source "$SCRIPT_DIR/precheck/index.sh"
 
 # Source the bootstrap barrel
-source bootstrap/index.sh
+source "$SCRIPT_DIR/bootstrap/index.sh"
 
 # Run prechecks first
 echo "Running preinstall validation..."

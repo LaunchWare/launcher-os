@@ -1,0 +1,11 @@
+# Essential system services for Hyprland
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+brightnessctl
+playerctl
+wl-clipboard
+grim
+slurp

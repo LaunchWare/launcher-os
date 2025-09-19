@@ -1,0 +1,4 @@
+# Core applications for development
+alacritty
+chromium
+vivaldi

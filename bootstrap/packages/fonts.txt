@@ -1,0 +1,4 @@
+# Font packages for development setup
+ttf-firacode-nerd
+noto-fonts
+noto-fonts-emoji

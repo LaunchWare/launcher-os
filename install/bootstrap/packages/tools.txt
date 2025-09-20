@@ -1,3 +1,9 @@
 # Desktop environment tools
 mako
 waybar
+hypridle
+hyprlock
+hyprshot
+hyprpicker
+hyprsunset
+wl-clipboard

@@ -1,6 +1,6 @@
 # Hyprland core packages
 hyprland
 xdg-desktop-portal-hyprland
-polkit-kde-agent
+hyprpolkitagent
 qt5-wayland
 qt6-wayland

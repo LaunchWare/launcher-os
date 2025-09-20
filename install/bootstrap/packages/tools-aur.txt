@@ -1,2 +1,6 @@
 # Desktop environment tools from AUR
 walker
+elephant
+elephant-providerlist
+elephant-desktopapplications
+pavucontrol

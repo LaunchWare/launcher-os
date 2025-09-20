@@ -3,6 +3,8 @@ autoconf-archive
 base
 base-devel
 intltool
+rsync
+ripgrep
 
 linux
 linux-firmware
@@ -23,6 +25,7 @@ playerctl
 wl-clipboard
 grim
 slurp
+swayosd
 
 # Network management
 networkmanager
@@ -46,3 +49,4 @@ broadcom-wl-dkms
 
 qt5-remoteobjects
 qt6-wayland
+uwsm

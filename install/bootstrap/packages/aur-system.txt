@@ -1,3 +1,5 @@
 # AUR packages for system functionality
 limine-mkinitcpio-hook
 limine-snapper-sync
+elephant
+elephant-providerlist

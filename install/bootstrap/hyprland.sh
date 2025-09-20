@@ -48,6 +48,14 @@ bootstrap_hyprland() {
     install_from_package_list "$bootstrap_dir/packages/system-services.txt" \
         "system services"
 
+    # Regenerate initramfs after installing firmware packages
+    log_progress "Regenerating initramfs..."
+    if ! run_command "sudo mkinitcpio -P" "Failed to regenerate initramfs"; then
+        log_warning "initramfs regeneration failed, but continuing..."
+    else
+        log_success "initramfs regenerated successfully"
+    fi
+
     # Install AUR system packages
     if [[ -f "$bootstrap_dir/packages/aur-system.txt" ]]; then
         install_aur_packages "$bootstrap_dir/packages/aur-system.txt" \
@@ -60,6 +68,12 @@ bootstrap_hyprland() {
     # Enable PipeWire services for current user
     systemctl --user enable pipewire.service >/dev/null 2>&1 || true
     systemctl --user enable wireplumber.service >/dev/null 2>&1 || true
+
+    # Enable elephant backend service (if installed)
+    if has_command elephant; then
+        log_progress "Enabling elephant backend service..."
+        systemctl --user enable elephant.service >/dev/null 2>&1 || true
+    fi
 
     log_success "Hyprland installation complete"
     return 0

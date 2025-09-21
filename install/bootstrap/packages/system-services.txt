@@ -21,6 +21,7 @@ pipewire
 pipewire-alsa
 pipewire-pulse
 pipewire-jack
+pamixer
 wireplumber
 brightnessctl
 playerctl

@@ -5,6 +5,8 @@ base-devel
 intltool
 rsync
 ripgrep
+btop
+eza
 
 linux
 linux-firmware

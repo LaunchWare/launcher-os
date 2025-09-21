@@ -11,7 +11,6 @@ source "$(dirname "$CONFIG_DIR")/lib/index.sh"
 
 # Source all config modules
 source "$CONFIG_DIR/copy-root.sh"
-source "$CONFIG_DIR/copy-config.sh"
 
 # Main config orchestrator function
 run_config_installation() {
@@ -20,12 +19,6 @@ run_config_installation() {
     # Copy project files to system location
     if ! config_copy_root; then
         log_error "Failed to copy project root to system"
-        return 1
-    fi
-
-    # Copy user configuration files
-    if ! config_copy_user_config; then
-        log_error "Failed to copy user configuration files"
         return 1
     fi
 

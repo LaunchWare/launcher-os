@@ -53,3 +53,6 @@ broadcom-wl-dkms
 qt5-remoteobjects
 qt6-wayland
 uwsm
+
+docker
+lazydocker

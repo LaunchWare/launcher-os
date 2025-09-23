@@ -4,3 +4,4 @@ chromium
 vivaldi
 nautilus
 obsidian
+tmux

@@ -9,6 +9,7 @@ btop
 eza
 xclip
 lsof
+unzip
 
 linux
 linux-firmware

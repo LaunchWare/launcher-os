@@ -7,6 +7,8 @@ rsync
 ripgrep
 btop
 eza
+xclip
+lsof
 
 linux
 linux-firmware
@@ -56,3 +58,6 @@ uwsm
 
 docker
 lazydocker
+
+xdg-desktop-portal
+xdg-desktop-portal-gtk

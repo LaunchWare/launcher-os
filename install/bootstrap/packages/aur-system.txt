@@ -3,3 +3,7 @@ limine-mkinitcpio-hook
 limine-snapper-sync
 elephant
 elephant-providerlist
+sesh-bin
+
+quickshell
+dms-shell-git

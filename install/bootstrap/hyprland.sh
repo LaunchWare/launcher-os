@@ -69,11 +69,6 @@ bootstrap_hyprland() {
     systemctl --user enable pipewire.service >/dev/null 2>&1 || true
     systemctl --user enable wireplumber.service >/dev/null 2>&1 || true
 
-    # Enable elephant backend service (if installed)
-    if has_command elephant; then
-        log_progress "Enabling elephant backend service..."
-        systemctl --user enable elephant.service >/dev/null 2>&1 || true
-    fi
 
     log_success "Hyprland installation complete"
     return 0

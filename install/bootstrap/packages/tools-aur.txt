@@ -1,6 +1,3 @@
 # Desktop environment tools from AUR
-walker
-elephant
-elephant-providerlist
-elephant-desktopapplications
+vicinae
 pavucontrol

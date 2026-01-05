@@ -16,6 +16,7 @@ source "$BOOTSTRAP_DIR/hyprland.sh"
 source "$BOOTSTRAP_DIR/fonts.sh"
 source "$BOOTSTRAP_DIR/apps.sh"
 source "$BOOTSTRAP_DIR/tools.sh"
+source "$BOOTSTRAP_DIR/ssb.sh"
 
 # Main bootstrap orchestrator function
 run_bootstrap_installation() {
@@ -53,6 +54,12 @@ run_bootstrap_installation() {
     # Install desktop tools
     if ! bootstrap_tools; then
         log_error "Failed to install desktop tools"
+        return 1
+    fi
+
+    # Install site-specific browsers
+    if ! bootstrap_ssb; then
+        log_error "Failed to install site-specific browsers"
         return 1
     fi
 

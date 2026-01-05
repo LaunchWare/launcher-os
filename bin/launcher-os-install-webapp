@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LAUNCHER_OS_DIR="$(dirname "$SCRIPT_DIR")"
+
+show_help() {
+  cat << EOF
+Usage: launcher-os-install-webapp [OPTIONS] [NAME] [URL] [ICON_URL] [MIME_TYPES]
+
+Install a site-specific browser application.
+
+ARGUMENTS:
+  NAME       Application name (e.g., "Gmail")
+  URL        Web application URL (e.g., "https://mail.google.com")
+  ICON_URL   Icon URL or local path (optional)
+  MIME_TYPES Semicolon-separated MIME types to handle (optional)
+
+OPTIONS:
+  -h, --help    Show this help message
+  -i, --interactive  Run in interactive mode
+
+EXAMPLES:
+  launcher-os-install-webapp Gmail https://mail.google.com
+  launcher-os-install-webapp --interactive
+  launcher-os-install-webapp Slack https://app.slack.com/client https://icon.png
+  launcher-os-install-webapp Zoom https://zoom.us/wc https://zoom.ico "x-scheme-handler/zoom;x-scheme-handler/zoommtg"
+
+If no arguments are provided, interactive mode is automatically enabled.
+EOF
+}
+
+interactive_mode() {
+  echo "=== launcher-os Site-Specific Browser Installation ==="
+  echo
+
+  read -p "Application name: " app_name
+  read -p "Application URL: " app_url
+  read -p "Icon URL (optional, press enter to skip): " icon_url
+  read -p "MIME types (optional, e.g., x-scheme-handler/zoom): " mime_types
+
+  if [[ -z "$app_name" || -z "$app_url" ]]; then
+    echo "Error: Application name and URL are required"
+    exit 1
+  fi
+
+  install_webapp "$app_name" "$app_url" "$icon_url" "$mime_types"
+}
+
+install_webapp() {
+  local name="$1"
+  local url="$2"
+  local icon_url="$3"
+  local mime_types="$4"
+
+  local safe_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
+  local desktop_file="$HOME/.local/share/applications/${safe_name}-ssb.desktop"
+  local icon_path="web-browser"
+
+  # Create applications directory if it doesn't exist
+  mkdir -p "$HOME/.local/share/applications"
+
+  # Handle icon if provided
+  if [[ -n "$icon_url" ]]; then
+    local icon_dir="$HOME/.local/share/applications/icons"
+    mkdir -p "$icon_dir"
+
+    if [[ "$icon_url" =~ ^https?:// ]]; then
+      # Download icon
+      local icon_ext="${icon_url##*.}"
+      [[ "$icon_ext" != "png" && "$icon_ext" != "jpg" && "$icon_ext" != "jpeg" && "$icon_ext" != "ico" ]] && icon_ext="png"
+      icon_path="$icon_dir/${safe_name}.${icon_ext}"
+
+      echo "Downloading icon..."
+      if curl -s -L -o "$icon_path" "$icon_url"; then
+        echo "Icon downloaded to $icon_path"
+      else
+        echo "Failed to download icon, using default"
+        icon_path="web-browser"
+      fi
+    else
+      # Copy local icon
+      if [[ -f "$icon_url" ]]; then
+        local icon_ext="${icon_url##*.}"
+        icon_path="$icon_dir/${safe_name}.${icon_ext}"
+        cp "$icon_url" "$icon_path"
+        echo "Icon copied to $icon_path"
+      else
+        echo "Icon file not found, using default"
+        icon_path="web-browser"
+      fi
+    fi
+  fi
+
+  # Extract domain for StartupWMClass
+  local domain=$(echo "$url" | sed -E 's|^https?://([^/]+).*|\1|')
+
+  # Build MIME types
+  local full_mime_types="text/html;text/xml;application/xhtml+xml;"
+  if [[ -n "$mime_types" ]]; then
+    # Add custom MIME types, ensuring they end with semicolon
+    full_mime_types="${full_mime_types}${mime_types%;};"
+  fi
+
+  # Create desktop entry
+  cat > "$desktop_file" << EOF
+[Desktop Entry]
+Name=$name
+Exec=chromium --app="$url" %u
+Icon=$icon_path
+Type=Application
+Categories=Network;
+StartupWMClass=$domain
+MimeType=$full_mime_types
+EOF
+
+  echo "✓ Desktop entry created: $desktop_file"
+
+  # Register MIME types if specified
+  if [[ -n "$mime_types" ]]; then
+    echo "Registering MIME type handlers..."
+    local desktop_filename="${safe_name}-ssb.desktop"
+
+    # Split mime_types by semicolon and register each one
+    IFS=';' read -ra MIME_ARRAY <<< "$mime_types"
+    for mime_type in "${MIME_ARRAY[@]}"; do
+      if [[ -n "$mime_type" ]]; then
+        xdg-mime default "$desktop_filename" "$mime_type" 2>/dev/null || true
+        echo "  ✓ Registered handler for $mime_type"
+      fi
+    done
+  fi
+
+  echo "✓ $name will appear in your application launcher"
+  echo
+  echo "To add a keybind, add this to your Hyprland config:"
+  echo "bind = SUPER, [KEY], exec, launch-os-launch-or-focus.sh \"$name|$domain\" \"chromium --app=$url\""
+}
+
+# Parse arguments
+case "${1:-}" in
+  -h|--help)
+    show_help
+    exit 0
+    ;;
+  -i|--interactive)
+    interactive_mode
+    exit 0
+    ;;
+  "")
+    interactive_mode
+    exit 0
+    ;;
+  *)
+    if [[ $# -lt 2 ]]; then
+      echo "Error: NAME and URL are required"
+      echo "Use --help for usage information"
+      exit 1
+    fi
+    install_webapp "$1" "$2" "${3:-}" "${4:-}"
+    ;;
+esac

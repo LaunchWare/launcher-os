@@ -5,7 +5,7 @@ sesh-bin
 
 quickshell
 dms-shell-git
-mutagen
+matugen-git
 geoclue
 colloid-gtk-theme
 qt6ct-kde

@@ -53,7 +53,7 @@ lib32-nvidia-utils
 dkms
 broadcom-wl-dkms
 
-qt5-remoteobjects
+qt6-remoteobjects
 qt6-wayland
 uwsm
 

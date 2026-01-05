@@ -1,45 +1,45 @@
 #!/usr/bin/env bash
-# Install AUR helper (yay) for AUR packages
+# Install AUR helper (paru) for AUR packages
 
 bootstrap_aur() {
-    log_section "Installing AUR Helper (yay)"
+    log_section "Installing AUR Helper (paru)"
 
-    # Check if yay is already installed
-    if has_command yay; then
-        log_success "yay already installed"
+    # Check if paru is already installed
+    if has_command paru; then
+        log_success "paru already installed"
         return 0
     fi
 
-    log_progress "Installing yay AUR helper..."
+    log_progress "Installing paru AUR helper..."
 
     # Install base-devel and git (required for building AUR packages)
     run_command "sudo pacman -S --noconfirm base-devel git" \
         "Failed to install build dependencies"
 
-    # Clone and build yay
-    local temp_dir="/tmp/yay-install"
+    # Clone and build paru
+    local temp_dir="/tmp/paru-install"
     rm -rf "$temp_dir"
 
-    log_progress "Cloning yay repository..."
-    run_command "git clone https://aur.archlinux.org/yay.git $temp_dir" \
-        "Failed to clone yay repository"
+    log_progress "Cloning paru repository..."
+    run_command "git clone https://aur.archlinux.org/paru.git $temp_dir" \
+        "Failed to clone paru repository"
 
-    log_progress "Building and installing yay..."
+    log_progress "Building and installing paru..."
     (
         cd "$temp_dir"
         run_command "makepkg -si --noconfirm" \
-            "Failed to build and install yay"
+            "Failed to build and install paru"
     )
 
     # Clean up
     rm -rf "$temp_dir"
 
     # Verify installation
-    if has_command yay; then
-        log_success "yay installed successfully"
+    if has_command paru; then
+        log_success "paru installed successfully"
         return 0
     else
-        log_error "yay installation failed"
+        log_error "paru installation failed"
         return 1
     fi
 }
@@ -49,9 +49,9 @@ install_aur_packages() {
     local input="$1"
     local description="$2"
 
-    # Check if yay is available
-    if ! has_command yay; then
-        log_error "yay not found - cannot install AUR packages"
+    # Check if paru is available
+    if ! has_command paru; then
+        log_error "paru not found - cannot install AUR packages"
         return 1
     fi
 
@@ -76,7 +76,7 @@ install_aur_packages() {
     log_progress "Installing $description..."
     log_info "AUR packages to install: $packages"
 
-    run_command "yay -S --noconfirm $packages" \
+    run_command "paru -S --noconfirm $packages" \
         "Failed to install $description"
 
     log_success "$description installed successfully"

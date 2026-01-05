@@ -17,7 +17,7 @@ precheck_gum() {
     else
         log_error "Gum not available in official repos"
         log_info "This setup requires gum for consistent UI"
-        log_info "Please install gum via AUR first: yay -S gum"
+        log_info "Please install gum via AUR first: paru -S gum"
         return 1
     fi
 }

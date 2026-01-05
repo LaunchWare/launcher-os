@@ -17,7 +17,7 @@ bootstrap_gum() {
         run_command "sudo pacman -S --noconfirm gum" "Failed to install gum via pacman"
     else
         log_error "Gum not available in official repos"
-        log_info "Please install gum via AUR first: yay -S gum"
+        log_info "Please install gum via AUR first: paru -S gum"
         return 1
     fi
 

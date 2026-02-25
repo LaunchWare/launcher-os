@@ -26,3 +26,8 @@ bootstrap_ssb() {
 
     return 0
 }
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  source "$(dirname "${BASH_SOURCE[0]}")/../lib/index.sh"
+  bootstrap_ssb
+fi

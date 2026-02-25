@@ -48,53 +48,115 @@ interactive_mode() {
   install_webapp "$app_name" "$app_url" "$icon_url" "$mime_types"
 }
 
+detect_ssb_browser() {
+  local CHROMIUM_BROWSERS=("vivaldi" "vivaldi-stable" "chromium" "chromium-browser" "google-chrome" "google-chrome-stable" "brave-browser" "microsoft-edge" "opera")
+
+  local default_desktop
+  default_desktop=$(xdg-settings get default-web-browser 2>/dev/null)
+
+  if [[ -n "$default_desktop" ]]; then
+    local desktop_path
+    for dir in "$HOME/.local/share/applications" /usr/share/applications /usr/local/share/applications; do
+      if [[ -f "$dir/$default_desktop" ]]; then
+        desktop_path="$dir/$default_desktop"
+        break
+      fi
+    done
+
+    if [[ -n "$desktop_path" ]]; then
+      local binary
+      binary=$(grep "^Exec=" "$desktop_path" | head -n1 | sed 's/^Exec=//' | awk '{print $1}' | xargs basename)
+      for browser in "${CHROMIUM_BROWSERS[@]}"; do
+        if [[ "$binary" == "$browser" ]]; then
+          echo "$binary"
+          return 0
+        fi
+      done
+    fi
+  fi
+
+  for browser in "${CHROMIUM_BROWSERS[@]}"; do
+    if command -v "$browser" &>/dev/null; then
+      echo "$browser"
+      return 0
+    fi
+  done
+
+  echo "chromium"
+}
+
 install_webapp() {
   local name="$1"
   local url="$2"
   local icon_url="$3"
   local mime_types="$4"
 
+  local ssb_browser
+  ssb_browser=$(detect_ssb_browser)
+
   local safe_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
   local desktop_file="$HOME/.local/share/applications/${safe_name}-ssb.desktop"
   local icon_path="web-browser"
+  local icon_dir="$HOME/.local/share/icons/hicolor/256x256/apps"
 
   # Create applications directory if it doesn't exist
   mkdir -p "$HOME/.local/share/applications"
 
+  to_png_256() {
+    local src="$1" dst="$2"
+    if command -v magick &>/dev/null; then
+      magick "${src}[0]" -resize 256x256 -background none -gravity center -extent 256x256 "$dst" 2>/dev/null
+    elif command -v convert &>/dev/null; then
+      convert "${src}[0]" -resize 256x256 -background none -gravity center -extent 256x256 "$dst" 2>/dev/null
+    else
+      return 1
+    fi
+  }
+
+  install_icon() {
+    local src="$1"
+    local dst="$icon_dir/${safe_name}.png"
+    mkdir -p "$icon_dir"
+    if to_png_256 "$src" "$dst"; then
+      icon_path="$dst"
+      echo "Icon installed to $dst"
+    else
+      echo "Failed to convert icon, using default"
+    fi
+  }
+
   # Handle icon if provided
   if [[ -n "$icon_url" ]]; then
-    local icon_dir="$HOME/.local/share/applications/icons"
-    mkdir -p "$icon_dir"
-
     if [[ "$icon_url" =~ ^https?:// ]]; then
-      # Download icon
       local icon_ext="${icon_url##*.}"
       [[ "$icon_ext" != "png" && "$icon_ext" != "jpg" && "$icon_ext" != "jpeg" && "$icon_ext" != "ico" ]] && icon_ext="png"
-      icon_path="$icon_dir/${safe_name}.${icon_ext}"
-
+      local tmp_icon
+      tmp_icon=$(mktemp --suffix=".${icon_ext}")
       echo "Downloading icon..."
-      if curl -s -L -o "$icon_path" "$icon_url"; then
-        echo "Icon downloaded to $icon_path"
+      if curl -s -L -o "$tmp_icon" "$icon_url"; then
+        install_icon "$tmp_icon"
       else
         echo "Failed to download icon, using default"
-        icon_path="web-browser"
       fi
+      rm -f "$tmp_icon"
     else
-      # Copy local icon
       if [[ -f "$icon_url" ]]; then
-        local icon_ext="${icon_url##*.}"
-        icon_path="$icon_dir/${safe_name}.${icon_ext}"
-        cp "$icon_url" "$icon_path"
-        echo "Icon copied to $icon_path"
+        install_icon "$icon_url"
       else
         echo "Icon file not found, using default"
-        icon_path="web-browser"
       fi
     fi
   fi
 
-  # Extract domain for StartupWMClass
+  # Extract domain for pattern matching and class computation
   local domain=$(echo "$url" | sed -E 's|^https?://([^/]+).*|\1|')
+
+  # Chromium-based browsers generate a Wayland app_id in --app mode of the form:
+  #   <browser_basename>-<domain>__-Default
+  # The --class flag is ignored for the Wayland app_id in --app mode.
+  local browser_base
+  browser_base=$(basename "$ssb_browser" | sed -E 's/-(stable|browser|bin)$//')
+  local wayland_class="${browser_base}-${domain}__-Default"
 
   # Build MIME types
   local full_mime_types="text/html;text/xml;application/xhtml+xml;"
@@ -107,11 +169,11 @@ install_webapp() {
   cat > "$desktop_file" << EOF
 [Desktop Entry]
 Name=$name
-Exec=chromium --app="$url" %u
+Exec=$ssb_browser --app="$url" %u
 Icon=$icon_path
 Type=Application
 Categories=Network;
-StartupWMClass=$domain
+StartupWMClass=$wayland_class
 MimeType=$full_mime_types
 EOF
 
@@ -135,7 +197,7 @@ EOF
   echo "✓ $name will appear in your application launcher"
   echo
   echo "To add a keybind, add this to your Hyprland config:"
-  echo "bind = SUPER, [KEY], exec, launch-os-launch-or-focus.sh \"$name|$domain\" \"chromium --app=$url\""
+  echo "bind = SUPER, [KEY], exec, launch-os-launch-or-focus.sh \"$domain\" \"$ssb_browser --app=$url\""
 }
 
 # Parse arguments

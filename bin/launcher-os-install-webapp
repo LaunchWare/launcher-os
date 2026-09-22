@@ -2,9 +2,6 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LAUNCHER_OS_DIR="$(dirname "$SCRIPT_DIR")"
-
 show_help() {
   cat << EOF
 Usage: launcher-os-install-webapp [OPTIONS] [NAME] [URL] [ICON_URL] [MIME_TYPES]
@@ -35,10 +32,10 @@ interactive_mode() {
   echo "=== launcher-os Site-Specific Browser Installation ==="
   echo
 
-  read -p "Application name: " app_name
-  read -p "Application URL: " app_url
-  read -p "Icon URL (optional, press enter to skip): " icon_url
-  read -p "MIME types (optional, e.g., x-scheme-handler/zoom): " mime_types
+  read -rp "Application name: " app_name
+  read -rp "Application URL: " app_url
+  read -rp "Icon URL (optional, press enter to skip): " icon_url
+  read -rp "MIME types (optional, e.g., x-scheme-handler/zoom): " mime_types
 
   if [[ -z "$app_name" || -z "$app_url" ]]; then
     echo "Error: Application name and URL are required"
@@ -55,7 +52,7 @@ detect_ssb_browser() {
   default_desktop=$(xdg-settings get default-web-browser 2>/dev/null)
 
   if [[ -n "$default_desktop" ]]; then
-    local desktop_path
+    local desktop_path=""
     for dir in "$HOME/.local/share/applications" /usr/share/applications /usr/local/share/applications; do
       if [[ -f "$dir/$default_desktop" ]]; then
         desktop_path="$dir/$default_desktop"
@@ -94,7 +91,8 @@ install_webapp() {
   local ssb_browser
   ssb_browser=$(detect_ssb_browser)
 
-  local safe_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
+  local safe_name
+  safe_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
   local desktop_file="$HOME/.local/share/applications/${safe_name}-ssb.desktop"
   local icon_path="web-browser"
   local icon_dir="$HOME/.local/share/icons/hicolor/256x256/apps"
@@ -149,7 +147,8 @@ install_webapp() {
   fi
 
   # Extract domain for pattern matching and class computation
-  local domain=$(echo "$url" | sed -E 's|^https?://([^/]+).*|\1|')
+  local domain
+  domain=$(echo "$url" | sed -E 's|^https?://([^/]+).*|\1|')
 
   # Chromium-based browsers generate a Wayland app_id in --app mode of the form:
   #   <browser_basename>-<domain>__-Default

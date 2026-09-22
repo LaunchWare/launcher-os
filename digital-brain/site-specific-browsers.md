@@ -142,20 +142,20 @@ launcher-os includes a `launch-os-launch-or-focus.sh` script that either focuses
 ```
 
 ### Example Keybind Configuration
-Add to your Hyprland bindings (e.g., `~/.config/hypr/bindings.conf` or custom file):
+Add to your Hyprland bindings (e.g., a file required from `~/.config/hypr/hyprland.lua`):
 
-```bash
-# Gmail SSB
-bind = SUPER, G, exec, launch-os-launch-or-focus.sh "Gmail" "chromium --app=https://mail.google.com"
+```lua
+-- Gmail SSB
+hl.bind("SUPER + G", hl.dsp.exec_cmd('launch-os-launch-or-focus.sh "Gmail" "chromium --app=https://mail.google.com"'))
 
-# Google Calendar SSB
-bind = SUPER, C, exec, launch-os-launch-or-focus.sh "Calendar" "chromium --app=https://calendar.google.com"
+-- Google Calendar SSB
+hl.bind("SUPER + C", hl.dsp.exec_cmd('launch-os-launch-or-focus.sh "Calendar" "chromium --app=https://calendar.google.com"'))
 
-# Zoom Web SSB
-bind = SUPER, Z, exec, launch-os-launch-or-focus.sh "Zoom" "chromium --app=https://zoom.us/wc"
+-- Zoom Web SSB
+hl.bind("SUPER + Z", hl.dsp.exec_cmd('launch-os-launch-or-focus.sh "Zoom" "chromium --app=https://zoom.us/wc"'))
 
-# Alternative: Use more specific window patterns
-bind = SUPER, M, exec, launch-os-launch-or-focus.sh "mail.google.com" "chromium --app=https://mail.google.com"
+-- Alternative: Use more specific window patterns
+hl.bind("SUPER + M", hl.dsp.exec_cmd('launch-os-launch-or-focus.sh "mail.google.com" "chromium --app=https://mail.google.com"'))
 ```
 
 ### Window Pattern Matching
@@ -194,9 +194,9 @@ hyprctl clients -j | jq -r --arg p "Gmail" '.[]|select((.class+" "+.title)|test(
    - Set up MIME type associations in bootstrap process
 
 4. **Add Hyprland Keybind Defaults**
-   - Create `default/hypr/bindings/ssb.conf` for SSB-specific keybinds
+   - Create `default/hypr/bindings/ssb.lua` for SSB-specific keybinds
    - Include launch-or-focus bindings for common apps
-   - Source in main bindings.conf
+   - Require in main bindings.lua
 
 5. **Update Installation Bootstrap**
    - Modify `install/bootstrap/index.sh` to:
@@ -224,7 +224,7 @@ launcher-os/
 │   │   ├── zoom-ssb.desktop
 │   │   └── url-router.desktop
 │   └── hypr/bindings/
-│       └── ssb.conf                     # SSB keybinds
+│       └── ssb.lua                      # SSB keybinds
 └── install/bootstrap/
     └── ssb.sh                          # SSB setup during install
 ```

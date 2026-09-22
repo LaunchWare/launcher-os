@@ -1,7 +1,7 @@
 # NixOS Migration Plan
 
 **Date:** 2026-09-22
-**Status:** Decided, not started
+**Status:** Phase 1 in progress — flake builds for `madthinkpad`; install guide in `06-madthinkpad-install.md`
 **Scope:** Replace launcher-os's Arch/pacman bash installer with a NixOS flake. Both machines end on NixOS.
 
 ---
@@ -118,18 +118,20 @@ launcher-os/                        # branch: nixos
 │   ├── madxp/
 │   │   ├── default.nix             # AMD, /home reuse, gaming, localLlm
 │   │   └── hardware-configuration.nix
-│   └── thinkpad/
+│   └── madthinkpad/
 │       ├── default.nix             # Intel, laptop
 │       └── hardware-configuration.nix
 ├── modules/
-│   ├── base.nix                    # networking, pipewire, bluetooth, shell, fonts
-│   ├── desktop.nix                 # hyprland, dms, vicinae, portals, ssb
+│   ├── base.nix                    # networking, pipewire, bluetooth, shell, fonts, CLI tools
+│   ├── desktop.nix                 # hyprland, dms, vicinae, handy, portals
 │   ├── dev.nix                     # docker, nix-ld, postgres
+│   ├── apps.nix                    # GUI applications
+│   ├── printing.nix                # cups, sane, brscan4
 │   ├── gaming.nix                  # steam
 │   ├── localLlm.nix                # llama socket unit + model path
 │   └── laptop.nix                  # lid, backlight, power profiles
-├── etc/hypr/*.lua                  # today's default/hypr → environment.etc
-├── pkgs/                           # bin/*.sh as writeShellApplication
+├── pkgs/                           # bin/*.sh as writeShellApplication, `los`
+├── default/hypr/*.lua              # → /etc/launcher-os/hypr via environment.etc; moves to etc/hypr in Phase 4
 └── install/                        # DEAD — untouched until madxp flips, then deleted
 ```
 
@@ -150,7 +152,7 @@ launcher-os = {
   localLlm.enable = true;     # llama.socket + ~/models (21GB Qwen GGUF)
 };
 
-# hosts/thinkpad/default.nix
+# hosts/madthinkpad/default.nix
 launcher-os = {
   desktop.enable  = true;
   desktop.shell   = "dms";

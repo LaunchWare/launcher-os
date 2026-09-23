@@ -49,7 +49,7 @@ detect_ssb_browser() {
   local CHROMIUM_BROWSERS=("vivaldi" "vivaldi-stable" "chromium" "chromium-browser" "google-chrome" "google-chrome-stable" "brave-browser" "microsoft-edge" "opera")
 
   local default_desktop
-  default_desktop=$(xdg-settings get default-web-browser 2>/dev/null)
+  default_desktop=$(xdg-settings get default-web-browser 2>/dev/null || true)
 
   if [[ -n "$default_desktop" ]]; then
     local desktop_path=""

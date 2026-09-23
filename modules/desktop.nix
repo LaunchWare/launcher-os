@@ -51,11 +51,16 @@ in
       xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
 
       # GTK apps take the cursor from gsettings, not XCURSOR_THEME; match env.lua.
+      # icon-theme is what QT_QPA_PLATFORMTHEME=gtk3 hands Qt, and it is also what
+      # DMS probes for its own lookup, so the named theme has to actually exist:
+      # Qt stops at a missing theme instead of falling through to hicolor, which
+      # left app and tray icons blank.
       programs.dconf.profiles.user.databases = [
         {
           settings."org/gnome/desktop/interface" = {
             cursor-theme = "Bibata-Modern-Classic";
             cursor-size = lib.gvariant.mkInt32 24;
+            icon-theme = "Adwaita";
           };
         }
       ];
@@ -110,6 +115,7 @@ in
 
       environment.systemPackages =
         (with pkgs; [
+          adwaita-icon-theme
           bibata-cursors
           brightnessctl
           cliphist

@@ -1,7 +1,10 @@
 # Lenovo ThinkPad, Intel Raptor Lake: CNVi wifi (iwlwifi) and Intel graphics, all in-tree.
 { pkgs, ... }:
 {
-  imports = [ ./hardware-configuration.nix ];
+  imports = [
+    ./hardware-configuration.nix
+    ./disk.nix
+  ];
 
   networking.hostName = "madthinkpad";
 

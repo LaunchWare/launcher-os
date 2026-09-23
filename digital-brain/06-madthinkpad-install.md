@@ -1,98 +1,61 @@
 # madthinkpad Install (Phase 1)
 
-**Scope:** Greenfield NixOS install on the ThinkPad from the `nix-migration` branch.
-See `05-nixos-migration.md` for the why; this is only the how.
+**Scope:** Clean NixOS install on the ThinkPad from the `nix-migration` branch. **The whole disk is
+reformatted.** See `05-nixos-migration.md` for the why; this is only the how. Everything below is
+scripted; this file only says what to run.
+
+| Partition | Size | Mount |
+|---|---|---|
+| ESP | 1G | `/boot` |
+| swap | 36G | hibernate resume device (32G RAM + headroom) |
+| root | 187G | `/` |
+| home | rest (~750G) | `/home` |
+
+Declared in `hosts/madthinkpad/disk.nix` (disko), on `/dev/nvme0n1`.
 
 ---
 
-## 1. Boot the installer
+## 1. Make the USB stick (on Arch)
 
-Boot the NixOS 26.05 minimal ISO. Get online with `nmtui`.
-
-## 2. Partition — mirrors madxp deliberately
-
-ESP + swap + `/` + separate `/home`. Size swap at least equal to RAM (`free -g`) if hibernate is
-ever wanted. The labels matter: the committed `hardware-configuration.nix` mounts by label.
+Get the **minimal** ISO and its `.sha256` from <https://nixos.org/download> (NixOS 26.05). The
+graphical ISO adds nothing here — its installer can't install from a flake.
 
 ```sh
-DISK=/dev/nvme0n1
-SWAP_END=33GiB    # 1GiB + RAM size
-ROOT_END=153GiB   # SWAP_END + 120GiB
-
-parted "$DISK" -- mklabel gpt
-parted "$DISK" -- mkpart ESP fat32 1MiB 1GiB
-parted "$DISK" -- set 1 esp on
-parted "$DISK" -- mkpart swap linux-swap 1GiB "$SWAP_END"
-parted "$DISK" -- mkpart root ext4 "$SWAP_END" "$ROOT_END"
-parted "$DISK" -- mkpart home ext4 "$ROOT_END" 100%
-
-mkfs.fat -F 32 -n BOOT "${DISK}p1"
-mkswap -L swap "${DISK}p2"
-mkfs.ext4 -L nixos "${DISK}p3"
-mkfs.ext4 -L home "${DISK}p4"
-
-mount /dev/disk/by-label/nixos /mnt
-mount --mkdir -o umask=077 /dev/disk/by-label/BOOT /mnt/boot
-mount --mkdir /dev/disk/by-label/home /mnt/home
-swapon /dev/disk/by-label/swap
+sha256sum -c nixos-minimal-26.05*-x86_64-linux.iso.sha256
+lsblk -o NAME,SIZE,MODEL,TRAN            # identify the stick by size/model
+sudo dd if=nixos-minimal-26.05*-x86_64-linux.iso of=/dev/sdX bs=4M status=progress conv=fsync oflag=direct
 ```
 
-## 3. Install from the flake
+`of=` is the whole device (`/dev/sda`), not a partition (`/dev/sda1`).
+
+## 2. Boot it
+
+In the ThinkPad BIOS (F1 at power-on): **disable Secure Boot** — systemd-boot is unsigned. Boot the
+stick from the F12 menu, then get online with `nmtui`.
+
+## 3. Install
 
 ```sh
-nix-shell -p git
-git clone -b nix-migration https://github.com/LaunchWare/launcher-os.git /mnt/home/dpickett/work/launcher-os
-cd /mnt/home/dpickett/work/launcher-os
-
-# Replace the placeholder with the real hardware scan
-nixos-generate-config --root /mnt --show-hardware-config > hosts/madthinkpad/hardware-configuration.nix
+sudo nix --extra-experimental-features "nix-command flakes" \
+  run github:LaunchWare/launcher-os/nix-migration#install -- madthinkpad
 ```
 
-Check the generated `fileSystems` entries still point at `/`, `/home`, `/boot` and the swap
-partition, then install. **The caches go on the command line** — the installer doesn't know about
-them yet, and without them Hyprland and Quickshell compile from source.
+It shows the target disk and waits for you to type `madthinkpad` before wiping anything, then
+partitions, installs (Hyprland and Vicinae come from Cachix; Handy and DMS build locally), and asks
+for your user password. Root gets no password — use `sudo`. Reboot when it finishes.
+
+## 4. First login
+
+Log in through the DMS greeter, open a terminal:
 
 ```sh
-nixos-install --flake .#madthinkpad \
-  --option extra-substituters "https://hyprland.cachix.org https://vicinae.cachix.org" \
-  --option extra-trusted-public-keys "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc= vicinae.cachix.org-1:1kDrfienkGHPYbkpNj1mWTr7Fm1+zcenzgTizIcI3oc="
+nmtui                                                    # wifi, now on the installed system
+los bootstrap https://github.com/dpickett/dotfiles.git
 ```
 
-Expect local builds of Handy (Rust, the slow one), DMS (Go), and repackaging of unfree apps.
-Everything else is substituted.
-
-Set the root password when prompted, then the user password and ownership:
-
-```sh
-nixos-enter --root /mnt -c 'passwd dpickett'
-nixos-enter --root /mnt -c 'chown -R dpickett:users /home/dpickett'
-reboot
-```
-
-## 4. First boot
-
-Log in through the DMS greeter (Hyprland (UWSM) session), open a terminal, then:
-
-```sh
-nmtui                                          # wifi again, now on the installed system
-cd ~/work/launcher-os
-git add hosts/madthinkpad/hardware-configuration.nix
-git commit -m "chore(madthinkpad): commit generated hardware configuration"
-
-chezmoi init --apply https://github.com/dpickett/dotfiles.git
-mise install                                   # node + ruby via nix-ld
-```
-
-Site-specific browsers are `$HOME` state, not system state — recreate them:
-
-```sh
-launcher-os-install-webapp "GMail" "https://mail.google.com" "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico" "x-scheme-handler/mailto"
-launcher-os-install-webapp "Google Calendar" "https://calendar.google.com" "https://calendar.google.com/googlecalendar/images/favicon_v2014_2.ico" "text/calendar;application/ics;x-scheme-handler/webcal"
-launcher-os-install-webapp "Zoom" "https://zoom.us/wc" "https://st1.zoom.us/zoom.ico" "x-scheme-handler/zoom;x-scheme-handler/zoommtg"
-```
-
-From here on, every change is `los switch` (`nixos-rebuild switch` for this host, then
-`chezmoi apply`).
+`los bootstrap` applies the dotfiles, installs mise toolchains, commits the generated hardware
+configuration, and creates the GMail / Calendar / Zoom site-specific browsers. From then on every
+change is `los switch`.
 
 ## 5. Smoke test
 
@@ -106,12 +69,14 @@ From here on, every change is `los switch` (`nixos-rebuild switch` for this host
 | Native deps link | `npm i esbuild sharp` / `gem install pg nokogiri` in a scratch dir |
 | Docker | `docker run --rm hello-world` |
 | Postgres | `createdb scratch && dropdb scratch` |
+| Hibernate | `systemctl hibernate`, power on, session is restored |
 
 A missing shared library from a mise binary means `programs.nix-ld.libraries` in
 `modules/dev.nix` needs another entry — find it with `LD_DEBUG=libs <binary>`.
 
 ## 6. Known gaps
 
+- If the NVMe isn't `/dev/nvme0n1`, the install stops at the confirmation — fix `disk.nix`, push, rerun.
 - `hyprmoncfg` comes from nixpkgs-unstable at 1.9.1; madxp runs 1.18.4.
 - DMS 1.6.2 runs on nixpkgs' Quickshell 0.3.0; watch `journalctl --user -u dms` for version skew.
 - Gate 4 (rollback): pick an older generation from the systemd-boot menu.

@@ -120,6 +120,7 @@ launcher-os/                        # branch: nixos
 │   │   └── hardware-configuration.nix
 │   └── madthinkpad/
 │       ├── default.nix             # Intel, laptop
+│       ├── disk.nix                # disko: ESP + 36G swap + 187G / + /home
 │       └── hardware-configuration.nix
 ├── modules/
 │   ├── base.nix                    # networking, pipewire, bluetooth, shell, fonts, CLI tools
@@ -319,7 +320,7 @@ Accepted cost: Arch-era cruft in `~/.config` and `~/.local/state` comes along. T
 ## 6. Open items to verify before Phase 1
 
 - [ ] Exact Hyprland + DMS Cachix substituters and public keys
-- [ ] ThinkPad RAM (sizes the swap partition; decides hibernate)
+- [x] ThinkPad RAM (sizes the swap partition; decides hibernate) — 32G, hibernate wanted: 36G swap
 - [ ] Whether the ThinkPad has a discrete GPU that's disabled vs absent
 - [ ] Where `hyprmoncfgd.service`, `tmux.service`, `llama.socket`, and the two timers are defined today
 - [ ] Steam library path under `/mnt/storage` and whether Proton prefixes live there (they should

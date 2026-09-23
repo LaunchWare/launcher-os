@@ -2,9 +2,13 @@
   writeShellApplication,
   chezmoi,
   curl,
+  disko,
+  git,
   hyprland,
   imagemagick,
   jq,
+  mise,
+  nixos-install-tools,
   procps,
   util-linux,
   xdg-utils,
@@ -12,8 +16,23 @@
 {
   los = writeShellApplication {
     name = "los";
-    runtimeInputs = [ chezmoi ];
+    runtimeInputs = [
+      chezmoi
+      git
+      mise
+    ];
     text = builtins.readFile ./los.sh;
+  };
+
+  install = writeShellApplication {
+    name = "launcher-os-install";
+    runtimeInputs = [
+      disko
+      git
+      nixos-install-tools
+      util-linux
+    ];
+    text = builtins.readFile ./install.sh;
   };
 
   launch-or-focus = writeShellApplication {

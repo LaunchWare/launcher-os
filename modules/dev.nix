@@ -1,3 +1,4 @@
+inputs:
 {
   config,
   lib,
@@ -7,6 +8,11 @@
 let
   cfg = config.launcher-os.dev;
   user = config.launcher-os.user;
+  # Imported rather than legacyPackages so it inherits allowUnfree (claude-code is unfree).
+  unstable = import inputs.nixpkgs-unstable {
+    inherit (pkgs.stdenv.hostPlatform) system;
+    inherit (config.nixpkgs) config;
+  };
 in
 {
   options.launcher-os.dev.enable = lib.mkEnableOption "development tooling: docker, nix-ld for mise, postgres";
@@ -81,7 +87,18 @@ in
       ];
     };
 
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = [
+      # Releases near-daily and can't self-update out of the store; stable lags weeks.
+      unstable.claude-code
+    ]
+    ++ (with pkgs; [
+      # C toolchain, the NixOS counterpart to Arch's base-devel: treesitter
+      # parsers, cgo, native npm/gem extensions. mise runtimes stay precompiled
+      # (all_compile = false in the mise config) and run via nix-ld above.
+      gcc
+      gnumake
+      pkg-config
+
       caddy
       cloudflared
       docker-buildx
@@ -91,6 +108,6 @@ in
       pandoc
       texliveMedium
       valkey
-    ];
+    ]);
   };
 }

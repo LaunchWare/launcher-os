@@ -50,6 +50,16 @@ in
 
       xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
 
+      # GTK apps take the cursor from gsettings, not XCURSOR_THEME; match env.lua.
+      programs.dconf.profiles.user.databases = [
+        {
+          settings."org/gnome/desktop/interface" = {
+            cursor-theme = "Bibata-Modern-Classic";
+            cursor-size = lib.gvariant.mkInt32 24;
+          };
+        }
+      ];
+
       environment.etc."launcher-os/hypr".source = ../default/hypr;
 
       programs.dank-material-shell = {
@@ -59,6 +69,9 @@ in
 
       services.displayManager.dms-greeter = {
         enable = true;
+        # Defaults to nixpkgs' older dms-shell, whose launcher writes a hyprlang
+        # config that Lua-era Hyprland rejects. Use the same DMS as the shell.
+        package = config.programs.dank-material-shell.package;
         compositor.name = "hyprland";
         configHome = config.users.users.${config.launcher-os.user}.home;
       };
@@ -97,6 +110,7 @@ in
 
       environment.systemPackages =
         (with pkgs; [
+          bibata-cursors
           brightnessctl
           cliphist
           colloid-gtk-theme

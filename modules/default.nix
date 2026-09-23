@@ -5,7 +5,7 @@ inputs: {
     inputs.handy.nixosModules.default
     ./base.nix
     (import ./desktop.nix inputs)
-    ./dev.nix
+    (import ./dev.nix inputs)
     ./apps.nix
     ./printing.nix
     ./laptop.nix

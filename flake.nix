@@ -45,10 +45,18 @@
 
       nixosConfigurations.madthinkpad = mkHost "madthinkpad";
 
-      apps.${system}.install = {
-        type = "app";
-        program = "${launcherPkgs.install}/bin/launcher-os-install";
-        meta.description = "Partition, format and install a launcher-os host from the NixOS ISO";
+      apps.${system} = {
+        install = {
+          type = "app";
+          program = "${launcherPkgs.install}/bin/launcher-os-install";
+          meta.description = "Partition, format and install a launcher-os host from the NixOS ISO";
+        };
+
+        check = {
+          type = "app";
+          program = "${launcherPkgs.check}/bin/launcher-os-check";
+          meta.description = "Run the repository quality gates; --staged for the index, --full to evaluate hosts";
+        };
       };
     };
 }

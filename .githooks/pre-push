@@ -1,0 +1,4 @@
+#!/bin/sh
+# Everything pre-commit runs, plus evaluating each nixosConfiguration so a
+# config that cannot build does not reach the remote.
+exec nix run .#check -- --full

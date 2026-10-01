@@ -2,19 +2,38 @@
   writeShellApplication,
   chezmoi,
   curl,
+  deadnix,
   desktop-file-utils,
   disko,
   git,
   hyprland,
   imagemagick,
   jq,
+  lua5_4,
   mise,
+  nixfmt,
   nixos-install-tools,
   procps,
+  shellcheck,
+  statix,
   util-linux,
   xdg-utils,
 }:
 {
+  check = writeShellApplication {
+    name = "launcher-os-check";
+    runtimeInputs = [
+      deadnix
+      git
+      jq
+      lua5_4
+      nixfmt
+      shellcheck
+      statix
+    ];
+    text = builtins.readFile ./check.sh;
+  };
+
   los = writeShellApplication {
     name = "los";
     runtimeInputs = [

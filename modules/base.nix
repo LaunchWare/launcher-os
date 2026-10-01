@@ -50,6 +50,12 @@ in
     hardware.bluetooth = {
       enable = true;
       powerOnBoot = true;
+
+      # BlueZ keeps org.bluez.Battery1 behind this flag, and that interface is
+      # the only source of peripheral battery level -- without it the shell's
+      # device list has nothing to show for a headset or a mouse. The cost is
+      # that it also exposes BlueZ's other not-yet-stable D-Bus interfaces.
+      settings.General.Experimental = true;
     };
 
     zramSwap.enable = true;
@@ -106,6 +112,7 @@ in
       (with pkgs; [
         age
         bat
+        bluetui
         btop
         chezmoi
         curl

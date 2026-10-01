@@ -27,3 +27,8 @@ hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true,
 hl.bind("SUPER + ALT + right", hl.dsp.exec_cmd("playerctl next"), { description = "Next track" })
 hl.bind("SUPER + ALT + up", hl.dsp.exec_cmd("playerctl play-pause"), { description = "Play" })
 hl.bind("SUPER + ALT + left", hl.dsp.exec_cmd("playerctl previous"), { description = "Previous track" })
+
+-- Bluetooth lives in the control center's device panel; `control-center open`
+-- takes no section argument, so this lands on the overview.
+hl.bind("SUPER + B", hl.dsp.exec_cmd("dms ipc call control-center toggle"),
+    { description = "Control center" })

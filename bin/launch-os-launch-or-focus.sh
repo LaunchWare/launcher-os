@@ -12,5 +12,5 @@ WINDOW_ADDRESS=$(hyprctl clients -j | jq -r --arg p "$WINDOW_PATTERN" '.[]|selec
 if [[ -n $WINDOW_ADDRESS ]]; then
   hyprctl dispatch "hl.dsp.focus({ window = \"address:$WINDOW_ADDRESS\" })"
 else
-  eval exec $LAUNCH_COMMAND
+  eval exec "$LAUNCH_COMMAND"
 fi

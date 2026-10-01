@@ -1,0 +1,46 @@
+name: PR
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Another push to the same PR makes the run in flight irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: cachix/install-nix-action@v31
+
+      # Advisory. Every fast-moving input here pins its own nixpkgs on purpose
+      # (see the comment in flake.nix), which is exactly the shape this action
+      # objects to, so it reports without failing the job.
+      - name: flake.lock hygiene
+        uses: DeterminateSystems/flake-checker-action@v14
+        with:
+          fail-mode: false
+
+      # Deliberately not --no-build. nix flake check only ever builds
+      # checks.<system>.*, and this flake exposes no checks output, so it builds
+      # nothing either way -- while --no-build does stop it realising Hyprland's
+      # source, whose derivation reads a VERSION file out of it during
+      # evaluation. That is what failed: the path sits in a warm local store and
+      # is absent on a fresh runner. If a checks output is ever added here, keep
+      # it clear of the desktop closure -- 23.5 GiB against a runner's ~14 GiB.
+      - name: Evaluate every flake output
+        run: nix flake check --show-trace
+
+      # Byte-for-byte what .githooks/pre-push runs, so CI and the hooks cannot
+      # drift into disagreeing about what "conforms" means.
+      - name: Repository gates and host evaluation
+        run: nix run .#check -- --full

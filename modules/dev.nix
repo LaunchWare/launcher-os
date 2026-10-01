@@ -88,8 +88,11 @@ in
     };
 
     environment.systemPackages = [
-      # Releases near-daily and can't self-update out of the store; stable lags weeks.
+      # Both release near-daily and can't self-update out of the store; stable
+      # lags weeks. pi's advertised installer is `npm install -g` into a
+      # writable prefix, which it has no way to find here.
       unstable.claude-code
+      unstable.pi-coding-agent
     ]
     ++ (with pkgs; [
       # C toolchain, the NixOS counterpart to Arch's base-devel: treesitter

@@ -88,6 +88,8 @@ mapfile -t sh_files < <(select_files 'install/*.sh')
 # of Hyprland to get there -- too steep a price for linting forty lines.
 mapfile -t body_files < <(select_files 'bin/*' 'pkgs/*.sh')
 
+mapfile -t workflow_files < <(select_files '.github/workflows/*.yml')
+
 if [ "${#nix_files[@]}" -gt 0 ]; then
   run_check "nixfmt      ${#nix_files[@]} nix file(s)" nixfmt --check "${nix_files[@]}"
   run_check "deadnix     ${#nix_files[@]} nix file(s)" deadnix --fail "${nix_files[@]}"
@@ -109,6 +111,12 @@ fi
 if [ "${#body_files[@]}" -gt 0 ]; then
   run_check "shellcheck  ${#body_files[@]} script bod(ies)" \
     shellcheck -s bash -e SC1091 --severity=error "${body_files[@]}"
+fi
+
+# actionlint shells out to shellcheck for the run: blocks, which is already in
+# runtimeInputs here.
+if [ "${#workflow_files[@]}" -gt 0 ]; then
+  run_check "actionlint  ${#workflow_files[@]} workflow(s)" actionlint "${workflow_files[@]}"
 fi
 
 if [ "${#lua_files[@]}" -gt 0 ]; then

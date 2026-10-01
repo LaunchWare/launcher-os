@@ -1,5 +1,6 @@
 {
   writeShellApplication,
+  actionlint,
   chezmoi,
   curl,
   deadnix,
@@ -23,6 +24,7 @@
   check = writeShellApplication {
     name = "launcher-os-check";
     runtimeInputs = [
+      actionlint
       deadnix
       git
       jq

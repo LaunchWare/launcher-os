@@ -2,6 +2,7 @@
   writeShellApplication,
   chezmoi,
   curl,
+  desktop-file-utils,
   disko,
   git,
   hyprland,
@@ -57,6 +58,7 @@
     name = "launcher-os-install-webapp";
     runtimeInputs = [
       curl
+      desktop-file-utils
       imagemagick
       xdg-utils
     ];

@@ -91,32 +91,141 @@ install_webapp() {
   local ssb_browser
   ssb_browser=$(detect_ssb_browser)
 
+  local browser_base
+  browser_base=$(basename "$ssb_browser" | sed -E 's/-(stable|browser|bin)$//')
+
   local safe_name
   safe_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
-  local desktop_file="$HOME/.local/share/applications/${safe_name}-ssb.desktop"
-  local icon_path="web-browser"
-  local icon_dir="$HOME/.local/share/icons/hicolor/256x256/apps"
+  local data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+  local apps_dir="$data_home/applications"
+  local desktop_file="$apps_dir/${safe_name}-ssb.desktop"
+  # Fall back to the browser's own icon: it is guaranteed to be in the theme,
+  # unlike the legacy "web-browser" name, which Adwaita no longer ships.
+  local icon_name="$browser_base"
+  local icon_theme_dir="$data_home/icons/hicolor"
+  local icon_dir="$icon_theme_dir/256x256/apps"
 
   # Create applications directory if it doesn't exist
-  mkdir -p "$HOME/.local/share/applications"
+  mkdir -p "$apps_dir"
+
+  # Icon theme scanners (Vicinae among them) skip a theme directory that has no
+  # index.theme, so a bare hicolor tree under $XDG_DATA_HOME is ignored wholesale.
+  # Reuse the system's own hicolor index so the section list stays complete: a
+  # stub listing only 256x256/apps would shadow it for lookups elsewhere.
+  ensure_icon_theme_index() {
+    [[ -f "$icon_theme_dir/index.theme" ]] && return 0
+    mkdir -p "$icon_theme_dir"
+
+    local dir
+    IFS=':' read -ra data_dirs <<< "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+    for dir in "${data_dirs[@]}"; do
+      if [[ -f "$dir/icons/hicolor/index.theme" ]]; then
+        cp "$dir/icons/hicolor/index.theme" "$icon_theme_dir/index.theme"
+        chmod u+w "$icon_theme_dir/index.theme"
+        return 0
+      fi
+    done
+
+    cat > "$icon_theme_dir/index.theme" << 'INDEX'
+[Icon Theme]
+Name=Hicolor
+Comment=Fallback icon theme
+Hidden=true
+Directories=16x16/apps,22x22/apps,24x24/apps,32x32/apps,48x48/apps,64x64/apps,96x96/apps,128x128/apps,256x256/apps,512x512/apps,scalable/apps
+
+[16x16/apps]
+Size=16
+Context=Applications
+Type=Threshold
+
+[22x22/apps]
+Size=22
+Context=Applications
+Type=Threshold
+
+[24x24/apps]
+Size=24
+Context=Applications
+Type=Threshold
+
+[32x32/apps]
+Size=32
+Context=Applications
+Type=Threshold
+
+[48x48/apps]
+Size=48
+Context=Applications
+Type=Threshold
+
+[64x64/apps]
+Size=64
+Context=Applications
+Type=Threshold
+
+[96x96/apps]
+Size=96
+Context=Applications
+Type=Threshold
+
+[128x128/apps]
+Size=128
+Context=Applications
+Type=Threshold
+
+[256x256/apps]
+Size=256
+Context=Applications
+Type=Threshold
+
+[512x512/apps]
+Size=512
+Context=Applications
+Type=Threshold
+
+[scalable/apps]
+Size=256
+MinSize=8
+MaxSize=512
+Context=Applications
+Type=Scalable
+INDEX
+  }
+
+  # A favicon .ico usually packs several resolutions, and frame 0 is the smallest
+  # (16x16 for Gmail's). Take the widest frame instead of upscaling a thumbnail.
+  largest_frame() {
+    local src="$1" im="$2"
+    "$im" identify -format '%w %[scene]\n' "$src" 2>/dev/null |
+      sort -rn | head -n1 | awk '{print $2}'
+  }
 
   to_png_256() {
     local src="$1" dst="$2"
+    local im=""
     if command -v magick &>/dev/null; then
-      magick "${src}[0]" -resize 256x256 -background none -gravity center -extent 256x256 "$dst" 2>/dev/null
+      im=magick
     elif command -v convert &>/dev/null; then
-      convert "${src}[0]" -resize 256x256 -background none -gravity center -extent 256x256 "$dst" 2>/dev/null
+      im=convert
     else
       return 1
     fi
+
+    local frame
+    frame=$(largest_frame "$src" "$im")
+    [[ -n "$frame" ]] || frame=0
+
+    "$im" "${src}[${frame}]" -resize 256x256 -background none -gravity center -extent 256x256 "$dst" 2>/dev/null
   }
 
   install_icon() {
     local src="$1"
     local dst="$icon_dir/${safe_name}.png"
     mkdir -p "$icon_dir"
+    ensure_icon_theme_index
     if to_png_256 "$src" "$dst"; then
-      icon_path="$dst"
+      # Reference the themed name, not the path: that is what launchers look up.
+      icon_name="$safe_name"
       echo "Icon installed to $dst"
     else
       echo "Failed to convert icon, using default"
@@ -153,8 +262,6 @@ install_webapp() {
   # Chromium-based browsers generate a Wayland app_id in --app mode of the form:
   #   <browser_basename>-<domain>__-Default
   # The --class flag is ignored for the Wayland app_id in --app mode.
-  local browser_base
-  browser_base=$(basename "$ssb_browser" | sed -E 's/-(stable|browser|bin)$//')
   local wayland_class="${browser_base}-${domain}__-Default"
 
   # Build MIME types
@@ -169,7 +276,7 @@ install_webapp() {
 [Desktop Entry]
 Name=$name
 Exec=$ssb_browser --app="$url" %u
-Icon=$icon_path
+Icon=$icon_name
 Type=Application
 Categories=Network;
 StartupWMClass=$wayland_class
@@ -191,6 +298,15 @@ EOF
         echo "  ✓ Registered handler for $mime_type"
       fi
     done
+  fi
+
+  # Rebuild the caches launchers read, when the tools are around: mimeinfo.cache
+  # for the handler registration, icon-theme.cache for a theme dir that has one.
+  if command -v update-desktop-database &>/dev/null; then
+    update-desktop-database "$apps_dir" 2>/dev/null || true
+  fi
+  if [[ -f "$icon_theme_dir/icon-theme.cache" ]] && command -v gtk-update-icon-cache &>/dev/null; then
+    gtk-update-icon-cache -q -t -f "$icon_theme_dir" 2>/dev/null || true
   fi
 
   echo "✓ $name will appear in your application launcher"

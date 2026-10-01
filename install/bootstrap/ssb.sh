@@ -6,7 +6,14 @@
 bootstrap_ssb() {
     local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     local launcher_os_dir="$(dirname "$(dirname "$script_dir")")"
-    local install_script="$launcher_os_dir/bin/launcher-os-install-webapp"
+    # Prefer the packaged command: it carries imagemagick and xdg-utils on PATH,
+    # without which icon conversion silently falls back to a generic icon.
+    local install_script
+    if command -v launcher-os-install-webapp &>/dev/null; then
+      install_script="$(command -v launcher-os-install-webapp)"
+    else
+      install_script="$launcher_os_dir/bin/launcher-os-install-webapp"
+    fi
 
     log_info "Setting up default site-specific browsers..."
 

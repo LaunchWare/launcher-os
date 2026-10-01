@@ -105,8 +105,9 @@ Two hard requirements that follow:
   first `switch` compiles Hyprland and Quickshell from source. Check for a DMS cache too.
 - If `hyprland-plugins` is ever added, it must `follows = "hyprland"`.
 - `boot.kernelPackages` pinned explicitly, so kernel updates and desktop updates are separate
-  decisions. This is the lever for bisecting the unresolved **amdgpu S3-resume bug** on madxp across
-  generations instead of hand-pinning kernels.
+  decisions. This is the lever for bisecting the unresolved **amdgpu fault on madxp** across
+  generations instead of hand-pinning kernels — *if* it turns out to be a driver bug at all. The
+  evidence points at hardware. See `07-madxp-gpu-fault.md`.
 - `flake.lock` is committed. `nix flake update` is the new `pacman -Syu`; a bad update is a `git revert`.
 
 ### 3.3 Repo layout
@@ -220,7 +221,8 @@ in-tree, mesa, **zero DKMS**.
 
 1. Partition **mirroring madxp deliberately**: ESP + `/` + **separate `/home`** + **a real swap
    partition** (≥ RAM if hibernate is ever wanted). Separate `/home` is what makes the madxp flip a
-   two-hour job later; real swap addresses the other half of the suspend bug class.
+   two-hour job later; real swap is for hibernate and headroom. (It was once thought to address the
+   madxp suspend fault. It does not — `07-madxp-gpu-fault.md`.)
 2. Minimal NixOS install, flake skeleton, `base.nix` only. Boot to console. Commit.
 3. Add `desktop.nix` — Hyprland + DMS + Vicinae. **Cachix configured before the first `switch`.**
 4. Add `dev.nix` — Docker, `nix-ld` + libraries, mise toolchains verified actually executing.
@@ -287,7 +289,8 @@ Then: install NixOS formatting `/` only, mount `/home` and `/mnt/storage` in pla
 uses `/var/lib/postgresql/18` with its own initdb locale defaults, so **restore from dump; do not
 point NixOS at the Arch `PGDATA`**.
 
-Add real swap while here (currently zram-only 4G, implicated in the ENOMEM-at-suspend-entry issue).
+Add real swap while here (currently zram-only 4G). Wanted for hibernate and headroom; the earlier
+claim that zram was implicated in the madxp GPU fault is retracted in `07-madxp-gpu-fault.md`.
 
 Accepted cost: Arch-era cruft in `~/.config` and `~/.local/state` comes along. Take it over purity.
 

@@ -30,12 +30,15 @@ jobs:
         with:
           fail-mode: false
 
-      # --no-build is deliberate, not caution. The desktop closure is ~23.5 GiB
-      # and a GitHub-hosted runner has ~14 GiB of disk, so nothing in CI may
-      # reach for system.build.toplevel. Evaluation is the ceiling here; the
-      # build happens on the machine that is going to run it.
+      # Deliberately not --no-build. nix flake check only ever builds
+      # checks.<system>.*, and this flake exposes no checks output, so it builds
+      # nothing either way -- while --no-build does stop it realising Hyprland's
+      # source, whose derivation reads a VERSION file out of it during
+      # evaluation. That is what failed: the path sits in a warm local store and
+      # is absent on a fresh runner. If a checks output is ever added here, keep
+      # it clear of the desktop closure -- 23.5 GiB against a runner's ~14 GiB.
       - name: Evaluate every flake output
-        run: nix flake check --no-build --show-trace
+        run: nix flake check --show-trace
 
       # Byte-for-byte what .githooks/pre-push runs, so CI and the hooks cannot
       # drift into disagreeing about what "conforms" means.

@@ -45,6 +45,9 @@
 
       nixosConfigurations.madthinkpad = mkHost "madthinkpad";
 
+      # What `nix fmt` reaches for, and the same formatter the gates check with.
+      formatter.${system} = pkgs.nixfmt;
+
       apps.${system} = {
         install = {
           type = "app";

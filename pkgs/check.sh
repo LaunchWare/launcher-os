@@ -80,10 +80,13 @@ mapfile -t nix_files < <(select_files '*.nix' ':(exclude)hosts/*/hardware-config
 
 mapfile -t lua_files < <(select_files '*.lua')
 
-# Only install/, because bin/ and pkgs/ hold writeShellApplication bodies:
-# those carry no shebang of their own and nixpkgs already shellchecks them
-# while building the packages that embed them.
 mapfile -t sh_files < <(select_files 'install/*.sh')
+
+# writeShellApplication bodies, so the shell has to be named: they carry no
+# shebang of their own. nixpkgs shellchecks these as well, but only while
+# building the packages that embed them, and launch-or-focus pulls in 1.1 GiB
+# of Hyprland to get there -- too steep a price for linting forty lines.
+mapfile -t body_files < <(select_files 'bin/*' 'pkgs/*.sh')
 
 if [ "${#nix_files[@]}" -gt 0 ]; then
   run_check "nixfmt      ${#nix_files[@]} nix file(s)" nixfmt --check "${nix_files[@]}"
@@ -97,10 +100,15 @@ if [ "${#sh_files[@]}" -gt 0 ]; then
   # SC1091 is install/ sourcing install/lib at runtime, which is deliberate.
   # The warnings left in that pre-Nix bootstrap predate the migration, so the
   # bar here is errors rather than a cleanup this hook would force.
-  run_check "shellcheck  ${#sh_files[@]} shell script(s)" \
+  run_check "shellcheck  ${#sh_files[@]} script(s)" \
     shellcheck -e SC1091 --severity=error "${sh_files[@]}"
 else
   skip "shellcheck  nothing in scope"
+fi
+
+if [ "${#body_files[@]}" -gt 0 ]; then
+  run_check "shellcheck  ${#body_files[@]} script bod(ies)" \
+    shellcheck -s bash -e SC1091 --severity=error "${body_files[@]}"
 fi
 
 if [ "${#lua_files[@]}" -gt 0 ]; then

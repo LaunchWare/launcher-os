@@ -84,6 +84,24 @@ in
       programs.handy.enable = true;
       users.users.${config.launcher-os.user}.extraGroups = [ "input" ];
 
+      # Mirrors dot_config/keyd/default.conf in the dotfiles; that repo's
+      # run_onchange script copies it to /etc on Arch, here the module owns /etc/keyd.
+      # Perixx only -- the laptop's built-in keyboard stays untouched as a way back in.
+      services.keyd = {
+        enable = true;
+        keyboards.default = {
+          ids = [ "04f2:0402" ];
+          settings.main = {
+            # Tap to arm the next keypress; hold still works as a normal modifier.
+            capslock = "oneshot(control)";
+            leftmeta = "oneshot(meta)";
+            leftalt = "oneshot(alt)";
+            # Leader key for the Hyprland submap. Left Alt still covers every ALT chord.
+            rightalt = "f13";
+          };
+        };
+      };
+
       programs.hyprlock.enable = true;
       services.hypridle.enable = true;
 

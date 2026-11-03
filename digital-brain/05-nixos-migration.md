@@ -1,7 +1,7 @@
 # NixOS Migration Plan
 
 **Date:** 2026-09-22
-**Status:** Decided, not started
+**Status:** Phase 1 in progress — flake builds for `madthinkpad`; install guide in `06-madthinkpad-install.md`
 **Scope:** Replace launcher-os's Arch/pacman bash installer with a NixOS flake. Both machines end on NixOS.
 
 ---
@@ -105,8 +105,9 @@ Two hard requirements that follow:
   first `switch` compiles Hyprland and Quickshell from source. Check for a DMS cache too.
 - If `hyprland-plugins` is ever added, it must `follows = "hyprland"`.
 - `boot.kernelPackages` pinned explicitly, so kernel updates and desktop updates are separate
-  decisions. This is the lever for bisecting the unresolved **amdgpu S3-resume bug** on madxp across
-  generations instead of hand-pinning kernels.
+  decisions. This is the lever for bisecting the unresolved **amdgpu fault on madxp** across
+  generations instead of hand-pinning kernels — *if* it turns out to be a driver bug at all. The
+  evidence points at hardware. See `07-madxp-gpu-fault.md`.
 - `flake.lock` is committed. `nix flake update` is the new `pacman -Syu`; a bad update is a `git revert`.
 
 ### 3.3 Repo layout
@@ -118,18 +119,21 @@ launcher-os/                        # branch: nixos
 │   ├── madxp/
 │   │   ├── default.nix             # AMD, /home reuse, gaming, localLlm
 │   │   └── hardware-configuration.nix
-│   └── thinkpad/
+│   └── madthinkpad/
 │       ├── default.nix             # Intel, laptop
+│       ├── disk.nix                # disko: ESP + 36G swap + 187G / + /home
 │       └── hardware-configuration.nix
 ├── modules/
-│   ├── base.nix                    # networking, pipewire, bluetooth, shell, fonts
-│   ├── desktop.nix                 # hyprland, dms, vicinae, portals, ssb
+│   ├── base.nix                    # networking, pipewire, bluetooth, shell, fonts, CLI tools
+│   ├── desktop.nix                 # hyprland, dms, vicinae, handy, portals
 │   ├── dev.nix                     # docker, nix-ld, postgres
+│   ├── apps.nix                    # GUI applications
+│   ├── printing.nix                # cups, sane, brscan4
 │   ├── gaming.nix                  # steam
 │   ├── localLlm.nix                # llama socket unit + model path
 │   └── laptop.nix                  # lid, backlight, power profiles
-├── etc/hypr/*.lua                  # today's default/hypr → environment.etc
-├── pkgs/                           # bin/*.sh as writeShellApplication
+├── pkgs/                           # bin/*.sh as writeShellApplication, `los`
+├── default/hypr/*.lua              # → /etc/launcher-os/hypr via environment.etc; moves to etc/hypr in Phase 4
 └── install/                        # DEAD — untouched until madxp flips, then deleted
 ```
 
@@ -150,7 +154,7 @@ launcher-os = {
   localLlm.enable = true;     # llama.socket + ~/models (21GB Qwen GGUF)
 };
 
-# hosts/thinkpad/default.nix
+# hosts/madthinkpad/default.nix
 launcher-os = {
   desktop.enable  = true;
   desktop.shell   = "dms";
@@ -217,7 +221,8 @@ in-tree, mesa, **zero DKMS**.
 
 1. Partition **mirroring madxp deliberately**: ESP + `/` + **separate `/home`** + **a real swap
    partition** (≥ RAM if hibernate is ever wanted). Separate `/home` is what makes the madxp flip a
-   two-hour job later; real swap addresses the other half of the suspend bug class.
+   two-hour job later; real swap is for hibernate and headroom. (It was once thought to address the
+   madxp suspend fault. It does not — `07-madxp-gpu-fault.md`.)
 2. Minimal NixOS install, flake skeleton, `base.nix` only. Boot to console. Commit.
 3. Add `desktop.nix` — Hyprland + DMS + Vicinae. **Cachix configured before the first `switch`.**
 4. Add `dev.nix` — Docker, `nix-ld` + libraries, mise toolchains verified actually executing.
@@ -284,7 +289,8 @@ Then: install NixOS formatting `/` only, mount `/home` and `/mnt/storage` in pla
 uses `/var/lib/postgresql/18` with its own initdb locale defaults, so **restore from dump; do not
 point NixOS at the Arch `PGDATA`**.
 
-Add real swap while here (currently zram-only 4G, implicated in the ENOMEM-at-suspend-entry issue).
+Add real swap while here (currently zram-only 4G). Wanted for hibernate and headroom; the earlier
+claim that zram was implicated in the madxp GPU fault is retracted in `07-madxp-gpu-fault.md`.
 
 Accepted cost: Arch-era cruft in `~/.config` and `~/.local/state` comes along. Take it over purity.
 
@@ -317,7 +323,7 @@ Accepted cost: Arch-era cruft in `~/.config` and `~/.local/state` comes along. T
 ## 6. Open items to verify before Phase 1
 
 - [ ] Exact Hyprland + DMS Cachix substituters and public keys
-- [ ] ThinkPad RAM (sizes the swap partition; decides hibernate)
+- [x] ThinkPad RAM (sizes the swap partition; decides hibernate) — 32G, hibernate wanted: 36G swap
 - [ ] Whether the ThinkPad has a discrete GPU that's disabled vs absent
 - [ ] Where `hyprmoncfgd.service`, `tmux.service`, `llama.socket`, and the two timers are defined today
 - [ ] Steam library path under `/mnt/storage` and whether Proton prefixes live there (they should

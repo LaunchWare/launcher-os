@@ -1,0 +1,4 @@
+#!/bin/sh
+# Fast gates only (~1s). The host evaluation lives in pre-push because nix does
+# not cache it and it costs ~30s every run.
+exec nix run .#check -- --staged

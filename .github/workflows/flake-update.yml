@@ -1,0 +1,48 @@
+name: Update flake.lock
+
+on:
+  schedule:
+    # Monday 07:00 UTC. hyprland, dms, vicinae and handy all move faster than
+    # anyone remembers to bump them by hand.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Bump inputs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # The default branch has no flake until the nix migration merges, and a
+      # weekly red run for that is just noise.
+      - name: Look for a lock to bump
+        id: lock
+        run: |
+          if [ -f flake.lock ]; then
+            echo "present=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "present=false" >>"$GITHUB_OUTPUT"
+            echo "::notice::No flake.lock on ${{ github.ref_name }}; nothing to update."
+          fi
+
+      - uses: cachix/install-nix-action@v31
+        if: steps.lock.outputs.present == 'true'
+
+      - uses: DeterminateSystems/update-flake-lock@v29
+        if: steps.lock.outputs.present == 'true'
+        with:
+          branch: flake-lock-update
+          commit-msg: "chore(deps): update flake.lock"
+          pr-title: "chore(deps): update flake.lock"
+
+      # GITHUB_TOKEN-authored pull requests do not start other workflows, so
+      # pr.yml will not fire on the branch this just opened. Running the same
+      # gates here means a breaking bump still turns something red.
+      - name: Gates against the new lock
+        if: steps.lock.outputs.present == 'true'
+        run: nix run .#check -- --full

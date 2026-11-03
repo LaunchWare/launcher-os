@@ -1,0 +1,4 @@
+# W20 flags `services.tlp = { ... }` sitting beside `services.upower.enable`,
+# which is how every NixOS module in this repo is written. Collapsing those into
+# one nested attrset is the opposite of readable here.
+disabled = ["repeated_keys"]

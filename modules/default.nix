@@ -9,5 +9,6 @@ inputs: {
     ./apps.nix
     ./printing.nix
     ./laptop.nix
+    ./remote-access.nix
   ];
 }

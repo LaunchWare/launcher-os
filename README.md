@@ -42,6 +42,7 @@ launcher-os = {
   apps.enable = true;      # desktop applications
   printing.enable = true;  # printing and scanning
   laptop.enable = true;    # TLP power management
+  remoteAccess.enable = true;  # Cloudflare One client for reaching the home LAN
 };
 ```
 

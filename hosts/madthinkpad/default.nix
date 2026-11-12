@@ -22,6 +22,7 @@
     apps.enable = true;
     printing.enable = true;
     laptop.enable = true;
+    remoteAccess.enable = true;
   };
 
   system.stateVersion = "26.05";

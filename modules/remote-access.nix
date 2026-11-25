@@ -3,8 +3,7 @@ let
   cfg = config.launcher-os.remoteAccess;
 in
 {
-  options.launcher-os.remoteAccess.enable =
-    lib.mkEnableOption "the Cloudflare One client, for reaching the home LAN from outside";
+  options.launcher-os.remoteAccess.enable = lib.mkEnableOption "the Cloudflare One client, for reaching the home LAN from outside";
 
   config = lib.mkIf cfg.enable {
     # Runs the warp-svc daemon as the `cloudflare-warp` systemd unit. The package
